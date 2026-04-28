@@ -1,0 +1,52 @@
+{% load like_extras %}
+{% for image in uploaded_images %}
+  <div class="masonry-item">
+    <img
+      src="{{ image.image.url }}"
+      class="img-thumbnail img-clickable"
+      data-full="{{ image.image.url }}"
+      style="cursor: pointer;"
+    />
+    <div class="card-body p-2">
+        <h6 class="card-subtitle mb-1 text-muted">@{{ image.user.username }}</h6>
+        
+        <!-- Like/Unlike Button Form -->
+       <div class="d-flex align-items-center p-2 justify-content-between">
+  <form method="POST" action="{% url 'like_post' image.id %}" class="like-form m-0">
+    {% csrf_token %}
+    <input type="hidden" name="image_id" value="{{ image.id }}">
+
+    {% if user.is_authenticated %}
+      {% if user in image.likes.all %}
+        <button type="button" class="btn like-btn p-0 text-danger" data-action="unlike" data-image-id="{{ image.id }}">
+          <i class="bi bi-heart-fill fs-4"></i>
+        </button>
+      {% else %}
+        <button type="button" class="btn like-btn p-0 text-dark" data-action="like" data-image-id="{{ image.id }}">
+          <i class="bi bi-heart fs-4"></i>
+        </button>
+      {% endif %}
+    {% else %}
+      {% if image.anonymous_likes|session_liked:session_key %}
+        <button type="button" class="btn like-btn p-0 text-danger" data-action="unlike" data-image-id="{{ image.id }}">
+          <i class="bi bi-heart-fill fs-4"></i>
+        </button>
+      {% else %}
+        <button type="button" class="btn like-btn p-0 text-dark" data-action="like" data-image-id="{{ image.id }}">
+          <i class="bi bi-heart fs-4"></i>
+        </button>
+      {% endif %}
+    {% endif %}
+  </form>
+
+  <!-- Download Button Aligned with Like -->
+  <a href="{{ image.image.url }}" download class="btn btn-lg p-0 text-primary ms-3" title="Download">
+    <i class="bi bi-download fs-5"></i>
+  </a>
+</div>
+<p class="card-text mt-1 mb-0">
+  <strong class="like-count"> Total Likes: {{ image.likes_count }}</strong>
+</p>
+    </div>
+  </div>
+{% endfor %}

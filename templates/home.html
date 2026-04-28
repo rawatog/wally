@@ -1,0 +1,140 @@
+{% extends "layout.html" %}
+{% load like_extras %}
+{% load static %}
+{% block extra_css %}
+<style>
+  #loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+
+<div class="masonry-container" id="masonry-container">
+  {% include "image_list.html" %}
+</div>
+
+<div id="loading">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content" style="background-color: rgba(0, 0, 0, 0.5); border: none; box-shadow: none;">
+      <div class="modal-body p-0 text-center" style="background-color: transparent;">
+        <img src="" id="modalImage" class="img-fluid mx-auto d-block" style="max-height: 90vh; object-fit: contain;" alt="Full image">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let page = 2;
+  let loading = false;
+  let hasNext = "{{ page_obj.has_next|yesno:'true,false' }}".toLowerCase() === 'true';
+
+  async function loadMoreImages() {
+    if (!hasNext || loading) return;
+    loading = true;
+    document.getElementById('loading').style.display = 'block';
+
+    try {
+      const response = await fetch(`?page=${page}`, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      const data = await response.json();
+      document.getElementById('masonry-container').insertAdjacentHTML('beforeend', data.images_html);
+      attachModalListeners();  // Re-bind modal clicks
+      hasNext = data.has_next;
+      page += 1;
+    } catch (error) {
+      console.error('Error loading more images:', error);
+    } finally {
+      loading = false;
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    if (!hasNext) {
+      window.removeEventListener('scroll', handleScroll);
+    }
+  }
+
+  function handleScroll() {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200) {
+      loadMoreImages();
+    }
+  }
+
+  function attachModalListeners() {
+    document.querySelectorAll('.img-clickable').forEach(img => {
+      img.addEventListener('click', () => {
+        const fullSrc = img.getAttribute('data-full');
+        document.getElementById('modalImage').src = fullSrc;
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+      });
+    });
+  }
+
+  window.addEventListener('load', () => {
+    attachModalListeners();
+    window.addEventListener('scroll', handleScroll);
+  });
+</script>
+
+{% block extra_js %}
+
+<script>
+    $(document).on('click', '.like-btn', function(e) {
+        e.preventDefault();
+
+        var button = $(this);
+        var action = button.data('action');
+        var imageId = button.data('image-id');
+        var csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+        
+        $.ajax({
+            url: '{% url "like_post" 0 %}'.replace('0', imageId),
+            method: 'POST',
+            data: {
+                'csrfmiddlewaretoken': csrfToken,
+                'action': action,
+            },
+            success: function(response) {
+                // Update the button state
+                if (response.action === 'like') {
+                    // Change to "unlike" state
+                    button.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
+                    button.data('action', 'unlike');
+                    
+                } else {
+                    // Change to "like" state
+                    button.find('i').removeClass('bi-heart-fill').addClass('bi-heart');
+                    button.data('action', 'like');
+                  
+                }
+
+                // Update the like count dynamically
+                button.closest('.card-body').find('.card-text strong').text('Total Likes: ' + response.likes_count);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+
+{% endblock %}

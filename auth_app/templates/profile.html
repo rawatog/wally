@@ -1,0 +1,49 @@
+<!-- profile.html -->
+{% extends "layout.html" %}
+
+{% block title %}
+  Profile
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>{{ user.username }}'s Uploaded Images</h2>
+    <a class="btn btn-success mb-2" href="{% url 'post' %}">Post Wallpaper</a>
+
+    <div class="row">
+        {% for image in uploaded_images %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100">
+                <div class="image-container" style="height: 300px;">
+                    <img 
+                        src="{{ image.image.url }}" 
+                        class="img-fluid w-100 h-100" 
+                        style="object-fit: contain;" 
+                        alt="{{ image.description }}">
+                </div>
+                <div class="card-body p-2">
+    <p class="card-text">{{ image.description }}</p>
+    <p class="card-text">
+        <small class="text-muted">Uploaded on {{ image.created_at|date:"F d, Y" }}</small>
+    </p>
+
+    <!-- Display like count -->
+    <p class="card-text">
+        <strong>{{ image.total_likes }}</strong> Like{{ image.total_likes|pluralize }}
+    </p>
+
+    <!-- Form to delete image -->
+    <form method="post" action="{% url 'profile' %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="image_id" value="{{ image.id }}">
+        <button type="submit" name="action" value="delete" class="btn btn-danger mb-2">Delete</button>
+    </form>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+            <p>No images uploaded yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}
