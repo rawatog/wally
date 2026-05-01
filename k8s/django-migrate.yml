@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-migrate
+  namespace: wally
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: mjrwt69/wally:latest
+
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "Waiting for postgres..."
+
+              python - <<'EOF'
+import socket
+import time
+
+while True:
+    try:
+        socket.create_connection(("postgres", 5432), 2)
+        break
+    except Exception:
+        print("waiting for postgres...")
+        time.sleep(2)
+
+EOF
+
+              echo "Running migrations..."
+              python manage.py migrate --noinput
+
+          envFrom:
+            - secretRef:
+                name: django-db-secret
