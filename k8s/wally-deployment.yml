@@ -12,6 +12,14 @@ spec:
       labels:
         app: django-app
     spec:
+      initContainers:
+        - name: migrate
+          image: mjrwt69/wally:latest
+          command: ["python", "manage.py", "migrate"]
+          envFrom:
+            - secretRef:
+                name: django-db-secret
+
       containers:
         - name: django
           image: mjrwt69/wally:latest
