@@ -14,7 +14,7 @@ spec:
     spec:
       initContainers:
         - name: migrate
-          image: mjrwt69/wally:latest
+          image: mjrwt69/wally:v2
           command: ["python", "manage.py", "migrate"]
           envFrom:
             - secretRef:
@@ -22,9 +22,13 @@ spec:
 
       containers:
         - name: django
-          image: mjrwt69/wally:latest
+          image: mjrwt69/wally:v2
           ports:
             - containerPort: 8000
+
+          volumeMounts:
+            - name: media-volume
+              mountPath: /app/media   # 👈 THIS is the key
 
           envFrom:
             - secretRef:
@@ -42,10 +46,7 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 20
 
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
+      volumes:
+        - name: media-volume
+          persistentVolumeClaim:
+            claimName: django-media-pvc

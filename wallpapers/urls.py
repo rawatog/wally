@@ -18,7 +18,8 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
-
+from django.urls import re_path
+from django.views.static import serve
 import auth_app.urls
 from . import views
 from .views import home
@@ -31,3 +32,9 @@ urlpatterns = [
     path("__reload__/", include("django_browser_reload.urls")),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve, {
+        "document_root": settings.MEDIA_ROOT
+    }),
+]
