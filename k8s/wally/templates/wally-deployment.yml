@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-app
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: django-app
+  template:
+    metadata:
+      labels:
+        app: django-app
+    spec:
+      initContainers:
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["python", "manage.py", "migrate"]
+          envFrom:
+            - secretRef:
+                name: django-db-secret
+
+      containers:
+        - name: django
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 8000
+
+          volumeMounts:
+            - name: media-volume
+              mountPath: /app/media   # 👈 THIS is the key
+
+          envFrom:
+            - secretRef:
+                name: django-db-secret
+
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+
+      volumes:
+        - name: media-volume
+          persistentVolumeClaim:
+            claimName: django-media-pvc
